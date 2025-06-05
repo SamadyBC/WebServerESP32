@@ -2,6 +2,8 @@
 // It uses the ESP32's built-in Wi-Fi capabilities to create a web server that can control GPIO pins.
 #include <WiFi.h>
 #include <WebServer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 // Replace with your network credentials
 const char* ssid = "iPhone de Samady";
@@ -15,6 +17,13 @@ String output27State = "off";
 
 // Create a web server object
 WebServer server(80);
+
+// Creating FreeRTOS task handles
+TaskHandle_t mainTask;
+TaskHandle_t serverTask;
+// Function to handle the main task
+void MainTask(void *pvParameters);
+void ServerTask(void *pvParameters);
 
 // Function to handle the root URL and show the current states
 void handleRoot() {
@@ -73,8 +82,6 @@ void handleGPIO27Off() {
   handleRoot();
 }
 
-
-
 void setup() {
   Serial.begin(115200);
 
@@ -108,9 +115,35 @@ void setup() {
   // Start the web server
   server.begin();
   Serial.println("HTTP server started");
+  xTaskCreatePinnedToCore(MainTask, "mainTask", 8192, NULL, 1, &mainTask, 0);
+  xTaskCreatePinnedToCore(ServerTask, "serverTask", 4096, NULL, 3, &serverTask, 1);
+
 }
 
 void loop() {
   // Handle incoming client requests
-  server.handleClient();
+  //server.handleClient();
+}
+
+void MainTask(void *pvParameters) {
+  //taskCount++;
+  // while (true) {
+  //   if ((millis() - SensorUpdate) >= 50) {
+  //     SensorUpdate = millis();
+  //     BitsA0 = analogRead(PIN_A0);
+  //     BitsA1 = analogRead(PIN_A1);
+  //     VoltsA0 = BitsA0 * 3.3 / 4096;
+  //     VoltsA1 = BitsA1 * 3.3 / 4096;
+  //   }
+    vTaskDelay(pdMS_TO_TICKS(10));  // Adjust the delay as needed
+  //}
+}
+
+void ServerTask(void *pvParameters) {
+  //taskCount++;
+  while (true) {
+    // Update the server task core indicators
+    server.handleClient();
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }
